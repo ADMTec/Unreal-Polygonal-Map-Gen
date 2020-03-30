@@ -1,55 +1,124 @@
-#Polygonal Map Generator
+# Polygonal Map Generator
 
-This is a port of [the ActionScript code](https://github.com/amitp/mapgen2) of [Red Blob Games' *Polygonal Map Generation for Games*](http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/). This port is written in C++ and designed to work in Unreal Engine 4 using the Unreal Engine 4 "Plugin" system. This port works fully with games written in C++ as well as games that use Unreal Engine 4's "Blueprint" system.
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![Maintenance](https://img.shields.io/badge/Maintained%3F-no-red.svg)](https://github.com/Jay2645/Unreal-Polygonal-Map-Gen/graphs/commit-activity)
 
-The original ActionScript code was released under the MIT Open Source license; this C++ port of the code is also released under the MIT Open Source license.
+For legal reasons I'm not allowed to work on this currently. However, I'm still able to review and OK pull requests if need be in the future. This should also work for Unreal 4.21 and (probably) 4.22.
 
-This project also uses [Bl4ckb0ne's C++ Delaunay Triangulation algorithm](https://github.com/Bl4ckb0ne/delaunay-triangulation), modified slightly to work with the Unreal Engine. This code is also used under the MIT License. Conversion from Delaunay to Voronoi is (very loosely) based off of [Joseph Marshall's voronoi-c++ code](https://bitbucket.org/jlm/voronoi-c/src/b06aa9cccba6392d28ad7d7cae9a7361efb22c94?at=default), also modified under an MIT License.
+## Created for Unreal Engine 4.21
 
-#Installation
+![highresscreenshot00005](https://user-images.githubusercontent.com/2058763/50578306-17d8b880-0ded-11e9-8b8d-b7641fcd7479.png)
 
-Inside the root of your Unreal Project (the part with folders named "Content", "Saved", "Config", etc., as well as any Visual Studio solutions and your .uproject file), make sure there is a folder called "Plugins". If there isn't one, create one, clone this project into it, and you're done!
+This is a port of [the JavaScript code](https://github.com/amitp/mapgen2) of [Red Blob Games' *Polygonal Map Generation for Games*](http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/).
 
-It **should** just "work", but if it doesn't, open your Unreal Project in the Unreal Editor, then go `Edit->Plugins` and scroll all the way down to the bottom. Under `Project`, there should be one plugin listed, `Polygonal Map Generator`. Make sure it's enabled if it isn't already, and you should be good to go! This might or might not require an Editor restart for things to load and function properly.
+This port is written in C++ and designed to work in Unreal Engine 4 using the Unreal Engine 4 "Plugin" system. This port works fully with games written in C++ as well as games that use Unreal Engine 4's "Blueprint" system.
 
-Once it is loaded, you can either spawn in the `IslandMapGenerator` Actor raw, or create a Blueprint asset inheriting from it. Place the Actor in your level somewhere and call `CreateMap` on the `IslandMapGenerator`. This will create the actual map and notify you on completion. More details about how to use the data inside `IslandMapGenerator` are provided below.
+It supports Unreal Engine version 4.21.x; you can *probably* use it for earlier/later versions of the Unreal Engine, but you may have to make slight modifications.
 
-#Changes from Source Article
+![highresscreenshot00000](https://user-images.githubusercontent.com/2058763/50556433-f0b7a500-0c8d-11e9-8636-21dc94e46699.png)
 
-There have been a few changes from the ActionScript source. There's nothing too drastic, just a couple changes for better ease-of-use:
+![highresscreenshot00001](https://user-images.githubusercontent.com/2058763/50556434-f0b7a500-0c8d-11e9-94c9-2e4dbf61520b.png)
 
-* There has been an implementation of a "tag" system to provide more variety. This tag system uses Unreal's `FName` class, which is case-insensitive and built for fast lookup. This can, for example, allow users to specify part of the map as a "volcano," which is then something that can be taken into account during Biome generation. This tag system also replaces hardcoded booleans to determine whether part of the map is water, ocean, coast, etc.
+![highresscreenshot00003](https://user-images.githubusercontent.com/2058763/50556436-f0b7a500-0c8d-11e9-92fe-0da8a22dbee8.png)
 
-* Most of the original ActionScript code was placed in a single class, `Map`, with a couple helper classes for the shape of the island (`IslandShape` in this project) and selecting which points to use (`PointGeneratior` in this project). This code has been further encapsulated, with the `Map` class (`IslandMapGenerator` here) being broken down into various stages. Each stage is its own class, which can be overridden and users can provide their own implementation if the default one isn't to their liking.
+This version is designed to be a fairly barebones port; if you need extra features, [I've created a downstream fork](https://github.com/Jay2645/IslandGenerator) which supports things like procedural river names.
 
-#How Maps Are Made
+# Installation
 
-The actual map generation works by generating an array of points using a user-specified PointGeneratior (inheriting from UPointGenerator), which is triangulated using a [Delaunay Triangulation](https://en.wikipedia.org/wiki/Delaunay_triangulation). The Delaunay Triangulation is a dual graph of a [Voronoi Diagram](https://en.wikipedia.org/wiki/Voronoi_diagram), which provides us with 2 sets of points. This approach is called a "polygonal" map generation because we use the points of our Delaunay Triangulation as centers of polygons, with the vertices of that polygon given by the dual graph of the Voronoi Diagram.
+## Access through Blueprint only:
 
-Once a map is created, it will generate 3 different arrays:
+If you only want to access everything through Blueprint, you can just clone this project into your \<Project Root\>/Plugins folder, where \<Project Root\> is where the .uplugin file is kept. You may have to create the Plugins folder if you haven't made it already. From there, you should be able to drag the pre-made Blueprints into your scene, create new custom Blueprints, or do whatever else you need.
 
-* `FMapCenter`: This is the "center" of our polygon, and for all intents and purposes is treated as it being a polygon itself.
+## Access through C++ and Blueprints:
 
-* `FMapCorner`: This is a "vertex" of our polygon, which runs along the edge of the polygon. Rivers and such flow from FMapCorner to FMapCorner.
+1. Make a `Plugins` folder at your project root (where the .uproject file is), if you haven't already. Then, clone this project into a subfolder in your Plugins directory. After that, open up your project's .uproject file in Notepad (or a similar text editor), and change the `"AdditionalDependencies"` and `"Plugins"` sections to look like this:
 
-* `FMapEdge`: This is a helper class, and contains details on two different graphs. The Delaunay Triangulation can be found by looking at the DelaunayEdge, linking together two neighboring FMapCenters. The Voronoi Diagram can be found by looking at the VoronoiEdge, linking together two neighboring FMapCorners. Note that the order in which Center/Corner comes first cannot be guaranteed; sometimes it may be left-to-right, while other times it may be right-to-left.
+```
+	"Modules": [
+		{
+			"Name": "YourProjectName",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				<OTHER DEPENDENCIES GO HERE>
+				"PolygonalMapGenerator"
+			]
+		}
+	],
+	"Plugins": [
+		<OTHER PLUGINS GO HERE>
+		{
+			"Name": "PolygonalMapGenerator",
+			"Enabled": true
+		}
+	]
+```
 
-Both the FMapCenter and FMapCorner contain an FMapData struct on the inside, which contains data specific to that point in space -- elevation, moisture, whether a polygon is water, etc.
+> If you don't have a `"Modules"` section, then that usually means that your project isn't set up for C++ yet. First, set your project up to handle C++ code, then you should see the `"Modules"` section. It's okay if you don't see a `"Plugins"` section, however -- just add one in there.
 
-#Using in Unreal
+> In the past, I have gotten linker errors by not listing this in the .uproject file when trying to package a project. People have said you don't need to do it nowadays, so you *might* be able to skip this step -- even so, I'm listing it here in case any problems arise.
 
-To use in Unreal, simply place an `AIslandMapGenerator` actor in your level and call `CreateMap` on it. `CreateMap` takes a delegate which will be called when the map is complete. After the map is complete, you can access map corners, centers, or edges by calling `GetCorner`, `GetCenter`, or `GetEdge`, all of which ask for an index of the element in question, which is bound between 0 and `GetCornerNum`, `GetCenterNum`, or `GetEdgeNum`. 
+2. Go into your source code folder, and you'll see a `<Project Name>.build.cs file. Open it up. Under either "PrivateDependencyModuleNames" or "PublicDependencyModuleNames" add a new entry called "PolygonalMapGenerator".
 
-Keep in mind that the above functions all return ***copies*** of objects; once modified, you need to call `UpdateCorner`, `UpdateCenter`, or `UpdateEdge`. You can also access an array of ***all** MapData objects across the entire graph; that is to say, it is an array of every single MapData object within every MapCorner and MapCenter. Doing this can give you a representation of the entire map as a whole, which can then be converted into a heightmap for whatever you need.
+> This lets Unreal's Blueprint reflection system "see" your plugin and know to compile it before it compiles the rest of your code, so that you don't get weird linker errors when using things from the plugin.
 
-This system doesn't physically create anything inside the Unreal Engine itself, except for perhaps a debug diagram if the user chooses. It is up to the user to find or implement a system which can take the data from this graph and transform it into something tangible within the engine itself.
+3. Open up your project in Unreal. If you get a prompt asking for an Unreal Engine version, you probably missed a comma somewhere in your .uproject file -- make sure all the commas and syntax are correct and try again. If Unreal does start to load, you might be told that your project is out of date, and the editor will ask if you want to rebuild your project. Go ahead and say yes so the plugin can be installed properly (keeping in mind that it might take a while to rebuild).
 
-There is a class provided, `UPolygonalMapHeightmap`, which can create a heightmap from a `UPolygonMap`. If you are using the default implementation of `AIslandMapGenerator`, this will be done for you and you can access the heightmap after map generation is complete with `AIslandMapGenerator::GetHeightmap()`.
+4. Open up the Plugins menu, scroll down to the bottom, and ensure that the "PolygonalMapGenerator" plugin is enabled.
 
-The `UPolygonalMapHeightmap` class provides a couple helper classes:
+---
 
-* `GetMapData()` provides a copy of the raw array of FMapData objects with size `FIslandData::Size` by `FIslandData::Size`, which the user can iterate over.
+Once you have the project set up, you should be able to see it in the sidebar of the Content Browser; simply scroll down to "Polygonal Map Generator." You'll see 2 folders -- "Content" and "C++ Classes." If you don't see it in the Unreal Engine editor, make sure to turn on "Show Plugin Content" in the view options in the bottom-right corner.
 
-* `GetMapPoint()` takes in an integer X and Y value and safely outputs the FMapData object corresponding to that location. If that location is outside of the heightmap, it will output a "blank" FMapData object.
+* The "C++ Classes" folder contains, well, the C++ classes. You can right-click on them to create a new Blueprint or C++ class from the classes listed in that folder, or you can just do it the old-fashioned way, like you would inherit from Unreal's `Actor` class.
 
-This array of FMapData objects can be turned into a 2D grayscale image by the user (using `FMapData::Elevation` to create the color value), or it can be used to create data points in a 3D voxel implementation.
+* The "Content" folder contains a bunch of content that can help you when making your own version of the plugin. If you wanted to, you could delete these files, but they give examples on how to set up a map generator and what the different classes in the plugin actually do.
+
+# Use
+
+There's a couple "main" classes which make everything tick:
+
+* The `IslandMap` class, which (as its name implies) generates islands. It uses a number of Unreal Engine data assets to drive the parameters for island creation; you can drag-and-drop in custom data assets with different parameters if you wanted to create something different.
+
+* The `IslandMapMesh` class, which (again, like the name implies), generates islands and then creates a procedural mesh. This mesh is more of a proof-of-concept and quick example than anything robust and ready for gameplay; the class is basically there to show off how to use the data structures "in action," as it were.
+
+* Various data assets, which actually generate the island. Things like `IslandMoisture` handles moisture distribution, `IslandElevation` handles elevation distribution, etc. For the most part, [these match the files listed in the source repo](https://github.com/redblobgames/mapgen2).
+
+> The main exception to `IslandWater`, which gives various examples on how to create islands of different shapes and sizes -- `IslandSquareWater` makes a square island (probably not very useful), `IslandRadialWater` makes a (mostly) circular island using overlapping Sine waves, and `IslandNoiseWater` uses simplex noise to create the shape of islands. Of these, I think `IslandNoiseWater` looks the best -- you can see pictures of the islands it generates at the top of this README file.
+
+> There is also an additional file that's not in the source repo, under the "Mesh" folder -- `IslandMeshBuilder`. There's a couple subclasses `IslandSquareMeshBuilder` and `IslandPoissonMeshBuilder`. These lay out the actual vertices used in island creation; in the source repo, the mesh gets passed down with the points already added. These classes govern different ways to lay out the points -- `IslandSquareMeshBuilder` will do it in a uniform grid, whereas `IslandPoissonMeshBuilder` uses a poisson distribution to pseudo-randomly lay out all the points.
+
+## Advanced
+
+You can mess around with the data assets, creating new subclasses and overriding base methods. Unlike "normal" data assets, these assets *should* work with Blueprint, if needed. 
+
+If you wanted to implement custom water generation, a good way to do so would be to create a new C++ class that inherits from the `IslandWaters` class and then override whichever method you want to change. Inside Unreal, right-click inside a content folder, then navigate to Miscellaneous -> Data Asset and create a new instance of your custom `IslandWaters` data asset. Go back to the `IslandMap` and update the water data asset to point to the one you just made, and it should "just work."
+
+There's also a number of places to "hook" into the island generation code if you wanted to modify the existing logic of a certain step or add your own implementations.
+
+As I mentioned, I tried to keep this port pretty close to the original. I've added a couple things for convenience, such as actual mesh generation as well as a data structure to keep track of rivers (`URiver`). However, while the rivers are placed, they do not get rendered and the underlying mesh is still the same -- you'll have to either roll your own option or look at [that downstream fork I mentioned earlier](https://github.com/Jay2645/IslandGenerator).
+
+Speaking of mesh generation; it's not perfect -- it does its best to match each triangle to an individual biome for the purposes of assigning materials, but it comes out a bit jagged. 
+
+# Credits
+
+* The original code was released under the Apache 2.0 license; this C++ port of the code is also released under the Apache 2.0 license. Again, this was based on the [mapgen2](https://github.com/redblobgames/mapgen2) repository.
+
+* Also included in this code is a port of the [DualMesh](https://github.com/redblobgames/dual-mesh) library; DualMesh is also licensed under Apache 2.0.
+
+* Poisson Disc Sampling is created using code from the [Random Distribution Plugin](https://github.com/Xaymar/RandomDistributionPlugin) and used under the Apache 2.0 license.
+
+* Delaunay Triangulation is created [using the MIT-licensed Delaunator](https://github.com/delfrrr/delaunator-cpp) and made accessible through a number of Unreal helper functions. Something that's fairly annoying: Delaunay Triangulation is [built into the engine](https://github.com/EpicGames/UnrealEngine/blob/08ee319f80ef47dbf0988e14b546b65214838ec4/Engine/Source/Editor/Persona/Private/AnimationBlendSpaceHelpers.h), but is only accessible from the Unreal Editor. The data structures aren't exposed to other modules or Blueprint, so you can't use it without linker errors when shipping your game. The Unreal Engine code has a different license, so a third-party library has to be used.
+
+# Miscellaneous
+
+## Why mapgen2? Why not [mapgen4](https://github.com/redblobgames/mapgen4)?
+
+**Short answer:**
+
+Because mapgen4 wasn't open-source yet when I started refactoring all the code from mapgen1 to mapgen2 (as far as I can tell, there is no mapgen3).
+
+**Longer answer:**
+
+I'm not the biggest fan of mapgen4. In the future, [I may borrow some concepts regarding river representation](http://simblob.blogspot.com/2018/10/mapgen4-river-representation.html), and I do [enjoy how the rivers get laid out.](https://www.redblobgames.com/x/1723-procedural-river-growing/) I'm also unhappy with the current way of determining elevation (it's just distance from the nearest coastline), and I [like the idea of having moisture determined by rainfall](http://simblob.blogspot.com/2018/09/mapgen4-rainfall.html).
+
+However, I don't like how mapgen4 looks. It's a different approach to things -- it goes for a "handcrafted map" look, but that means there's a very distinct change division between hills and mountains, that's not very realistic. It's also designed in a way to let the user paint it; again, this is a cool idea, and one I might try to implement someday, but it's not the goal I was going for with this project. Ultimately, while there are some cool aspects to it (linked above), I prefer the way that mapgen2 feels (for the most part).

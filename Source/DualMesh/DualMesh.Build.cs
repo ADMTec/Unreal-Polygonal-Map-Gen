@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class PolygonalMapGenerator : ModuleRules
+public class DualMesh : ModuleRules
 {
-	public PolygonalMapGenerator(ReadOnlyTargetRules ROTargetRules) : base(ROTargetRules)
+	public DualMesh(ReadOnlyTargetRules ROTargetRules) : base(ROTargetRules)
     {
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -26,8 +26,7 @@ public class PolygonalMapGenerator : ModuleRules
 			new string[]
 			{
 				"Core",
-				"GameplayTags",
-				"ProceduralMeshComponent"
+				"GameplayTags"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -37,7 +36,6 @@ public class PolygonalMapGenerator : ModuleRules
 			new string[]
 			{
 				"Delaunator",
-				"DualMesh",
 				"CoreUObject",
 				"Engine",
 				"Slate",
